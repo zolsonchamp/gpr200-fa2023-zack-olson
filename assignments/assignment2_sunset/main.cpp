@@ -8,10 +8,10 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
-
 unsigned int createShader(GLenum shaderType, const char* sourceCode);
 unsigned int createShaderProgram(const char* vertexShaderSource, const char* fragmentShaderSource);
 unsigned int createVAO(float* vertexData, int numVertices);
+void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
 const int SCREEN_WIDTH = 1080;
 const int SCREEN_HEIGHT = 720;
@@ -43,6 +43,7 @@ const char* fragmentShaderSource = R"(
 
 float triangleColor[3] = { 1.0f, 0.5f, 0.0f };
 float triangleBrightness = 1.0f;
+bool showImGUIDemoWindow = true;
 
 int main() {
 	printf("Initializing...");
@@ -57,6 +58,7 @@ int main() {
 		return 1;
 	}
 	glfwMakeContextCurrent(window);
+	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
 	if (!gladLoadGL(glfwGetProcAddress)) {
 		printf("GLAD Failed to load GL headers");
@@ -93,9 +95,13 @@ int main() {
 			ImGui::NewFrame();
 
 			ImGui::Begin("Settings");
+			ImGui::Checkbox("Show Demo Window", &showImGUIDemoWindow);
 			ImGui::ColorEdit3("Color", triangleColor);
 			ImGui::SliderFloat("Brightness", &triangleBrightness, 0.0f, 1.0f);
 			ImGui::End();
+			if (showImGUIDemoWindow) {
+				ImGui::ShowDemoWindow(&showImGUIDemoWindow);
+			}
 
 			ImGui::Render();
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -165,5 +171,10 @@ unsigned int createVAO(float* vertexData, int numVertices) {
 	glEnableVertexAttribArray(0);
 
 	return vao;
+}
+
+void framebufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+	glViewport(0, 0, width, height);
 }
 
