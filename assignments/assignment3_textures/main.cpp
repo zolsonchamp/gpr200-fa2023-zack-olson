@@ -9,6 +9,7 @@
 #include <imgui_impl_opengl3.h>
 
 #include <ew/shader.h>
+#include <zoo/texture.h>
 
 struct Vertex {
 	float x, y, z;
@@ -58,21 +59,62 @@ int main() {
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init();
 
-	ew::Shader shader("assets/vertexShader.vert", "assets/fragmentShader.frag");
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	//ew::Shader shader("assets/vertexShader.vert", "assets/fragmentShader.frag");
+	ew::Shader backgroundShader("assets/backgroundShader.vert", "assets/backgroundShader.frag");
+	ew::Shader characterShader("assets/characterShader.vert", "assets/characterShader.frag");
+
 
 	unsigned int quadVAO = createVAO(vertices, 4, indices, 6);
 
 	glBindVertexArray(quadVAO);
+
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 		glClearColor(0.3f, 0.4f, 0.9f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		//Set uniforms
-		shader.use();
+		float time = (float)glfwGetTime();
+
+		//Draw Background
+		backgroundShader.use();
+
+		unsigned int waterTexture = loadTexture("assets/underwater.jpg", GL_REPEAT, GL_LINEAR);
+
+		//Place textureA in unit 0
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, waterTexture);
+
+		backgroundShader.setInt("_WaterTexture", 0);
+
+		backgroundShader.setFloat("iTime", time);
 
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, NULL);
+
+
+		//Draw Character
+		characterShader.use();
+
+
+		unsigned int fishTexture = loadTexture("assets/fishthing.png", GL_CLAMP_TO_EDGE, GL_LINEAR);
+
+
+		//Place textureA in unit 0
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fishTexture);
+
+
+		characterShader.setInt("_FishTexture", 0);
+
+		characterShader.setFloat("iTime", time);
+
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, NULL);
+
+		
+
 
 		//Render UI
 		{
