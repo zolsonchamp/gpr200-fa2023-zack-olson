@@ -11,6 +11,7 @@
 #include <ew/shader.h>
 #include <ew/ewMath/vec3.h>
 #include <ew/procGen.h>
+#include <zoo/transformations.h>
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
@@ -55,6 +56,11 @@ int main() {
 	
 	//Cube mesh
 	ew::Mesh cubeMesh(ew::createCube(0.5f));
+
+	//Define transform
+	const int NUM_CUBES = 4;
+	zoo::Transform transform[NUM_CUBES];
+	
 	
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
@@ -66,6 +72,13 @@ int main() {
 		shader.use();
 
 		//TODO: Set model matrix uniform
+		shader.use();
+		for (int i = 0; i < NUM_CUBES; i++)
+		{
+			shader.setMat4("_Model", transform[i].getModelMatrix());
+			cubeMesh.draw();
+		}
+		
 
 		cubeMesh.draw();
 
@@ -76,10 +89,25 @@ int main() {
 			ImGui::NewFrame();
 
 			ImGui::Begin("Transform");
+			for (size_t i = 0; i < NUM_CUBES; i++)
+			{
+				ImGui::PushID(i);
+				if (ImGui::CollapsingHeader("Transform")) {
+					ImGui::DragFloat3("Position", &transform[i].position.x, 0.05f);
+					ImGui::DragFloat3("Rotation", &transform[i].rotation.x, 1.0f);
+					ImGui::DragFloat3("Scale", &transform[i].scale.x, 0.05f);
+				}
+				ImGui::PopID();
+			}
 			ImGui::End();
+
+			
+
 
 			ImGui::Render();
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+			
 		}
 
 		glfwSwapBuffers(window);
