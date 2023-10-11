@@ -71,6 +71,10 @@ int main() {
 
 	glBindVertexArray(quadVAO);
 
+	//Load textures
+	unsigned int waterTexture = loadTexture("assets/underwater.jpg", GL_REPEAT, GL_LINEAR);
+	unsigned int fishTexture = loadTexture("assets/fishthing.png", GL_CLAMP_TO_EDGE, GL_LINEAR);
+
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
@@ -82,7 +86,7 @@ int main() {
 		//Draw Background
 		backgroundShader.use();
 
-		unsigned int waterTexture = loadTexture("assets/underwater.jpg", GL_REPEAT, GL_LINEAR);
+		
 
 		//Place textureA in unit 0
 		glActiveTexture(GL_TEXTURE0);
@@ -97,9 +101,6 @@ int main() {
 
 		//Draw Character
 		characterShader.use();
-
-
-		unsigned int fishTexture = loadTexture("assets/fishthing.png", GL_CLAMP_TO_EDGE, GL_LINEAR);
 
 
 		//Place textureA in unit 0
