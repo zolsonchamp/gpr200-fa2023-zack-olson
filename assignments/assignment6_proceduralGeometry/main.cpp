@@ -175,7 +175,7 @@ void resetCamera(ew::Camera& camera, ew::CameraController& cameraController) {
 
 	cameraController.yaw = -90.0f;
 	cameraController.pitch = 0.0f;
-	cameraController.moveSpeed = 8.0f;
+	cameraController.moveSpeed = 6.0f;
 }
 
 

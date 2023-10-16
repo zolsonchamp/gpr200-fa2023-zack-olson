@@ -1,6 +1,7 @@
 #include "cameraController.h"
 namespace ew {
 	void CameraController::Move(GLFWwindow* window, ew::Camera* camera, float deltaTime) {
+		bool prevFirstMouse = firstMouse;
 		//Only allow movement if right mouse is held
 		if (!glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2)) {
 			//Release cursor
@@ -9,7 +10,7 @@ namespace ew {
 			return;
 		}
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
+	
 		//MOUSE AIMING
 		{
 			double mouseX, mouseY;
@@ -32,6 +33,7 @@ namespace ew {
 			yaw += mouseDeltaX * mouseSensitivity;
 			pitch -= mouseDeltaY * mouseSensitivity;
 			pitch = ew::Clamp(pitch, -89.0f, 89.0f);
+
 		}
 		//KEYBOARD MOVEMENT
 		{
@@ -47,9 +49,6 @@ namespace ew {
 
 			ew::Vec3 right = ew::Normalize(ew::Cross(forward, ew::Vec3(0, 1, 0)));
 			ew::Vec3 up = ew::Normalize(ew::Cross(right, forward));
-
-			//Camera will now look at a position along this forward axis
-			camera->target = camera->position + forward;
 
 			//Keyboard movement
 			float moveDelta = moveSpeed * deltaTime;
@@ -71,6 +70,9 @@ namespace ew {
 			if (glfwGetKey(window, GLFW_KEY_Q)) {
 				camera->position -= up * moveDelta;
 			}
+
+			//Camera will now look at a position along this forward axis
+			camera->target = camera->position + forward;
 		}
 	}
 }
