@@ -9,12 +9,11 @@
 #include <imgui_impl_opengl3.h>
 
 #include <ew/shader.h>
+#include <ew/texture.h>
 #include <ew/procGen.h>
 #include <ew/transform.h>
 #include <ew/camera.h>
 #include <ew/cameraController.h>
-
-#include <glm/gtx/transform.hpp>
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void resetCamera(ew::Camera& camera, ew::CameraController& cameraController);
@@ -23,6 +22,18 @@ int SCREEN_WIDTH = 1080;
 int SCREEN_HEIGHT = 720;
 
 float prevTime;
+
+struct AppSettings {
+	const char* shadingModeNames[3] = { "Normals","UVs","Texture" };
+	int shadingModeIndex;
+
+	bool drawAsPoints = false;
+	ew::Vec3 bgColor = ew::Vec3(0.1f);
+	bool wireframe = false;
+}appSettings;
+
+ew::Camera camera;
+ew::CameraController cameraController;
 
 int main() {
 	printf("Initializing...");
@@ -56,22 +67,23 @@ int main() {
 
 	//Depth testing - required for depth sorting!
 	glEnable(GL_DEPTH_TEST);
+	glPointSize(3.0f);
 
 	ew::Shader shader("assets/vertexShader.vert", "assets/fragmentShader.frag");
-	
-	//Create meshes
-	ew::Mesh cubeMesh(ew::createCube(0.5f));
+	unsigned int brickTexture = ew::loadTexture("assets/brick_color.jpg",GL_REPEAT,GL_LINEAR);
+
+	//Create cube
+	ew::MeshData cubeMeshData = ew::createCube(0.5f);
+	ew::Mesh cubeMesh(cubeMeshData);
 
 	//Initialize transforms
 	ew::Transform cubeTransform;
 
-	//Initialize camera
-	ew::Camera camera;
-	ew::CameraController cameraController;
 	resetCamera(camera,cameraController);
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
+		camera.aspectRatio = (float)SCREEN_WIDTH / SCREEN_HEIGHT;
 
 		float time = (float)glfwGetTime();
 		float deltaTime = time - prevTime;
@@ -80,18 +92,22 @@ int main() {
 		cameraController.Move(window, &camera, deltaTime);
 
 		//Render
-		glClearColor(0.3f, 0.4f, 0.9f, 1.0f);
+		glClearColor(appSettings.bgColor.x, appSettings.bgColor.y, appSettings.bgColor.z,1.0f);
+
 		//Clear both color buffer AND depth buffer
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		camera.aspectRatio = (float)SCREEN_WIDTH / SCREEN_HEIGHT;
+		
 
 		shader.use();
-		shader.setMat4("_ViewProjection", camera.ProjectionMatrix() * camera.ViewMatrix());
+		glBindTexture(GL_TEXTURE_2D, brickTexture);
+		shader.setInt("_Texture", 0);
+		shader.setInt("_Mode", appSettings.shadingModeIndex);
 
+		shader.setMat4("_ViewProjection", camera.ProjectionMatrix() * camera.ViewMatrix());
 		//Draw cube
 		shader.setMat4("_Model", cubeTransform.getModelMatrix());
-		cubeMesh.draw();
+		cubeMesh.draw((ew::DrawMode)appSettings.drawAsPoints);
 
 		//Render UI
 		{
@@ -117,6 +133,17 @@ int main() {
 					resetCamera(camera, cameraController);
 				}
 			}
+
+			ImGui::ColorEdit3("BG color", &appSettings.bgColor.x);
+			ImGui::Combo("Shading Mode", &appSettings.shadingModeIndex, appSettings.shadingModeNames, IM_ARRAYSIZE(appSettings.shadingModeNames));
+			if (ImGui::Checkbox("Point Drawing", &appSettings.drawAsPoints)) {
+
+				glPolygonMode(GL_FRONT_AND_BACK, appSettings.wireframe ? GL_LINE : GL_FILL);
+			}
+			if (ImGui::Checkbox("Wireframe", &appSettings.wireframe)) {
+				glPolygonMode(GL_FRONT_AND_BACK, appSettings.wireframe ? GL_LINE : GL_FILL);
+			}
+			
 			ImGui::End();
 			
 			ImGui::Render();
@@ -133,10 +160,11 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, width, height);
 	SCREEN_WIDTH = width;
 	SCREEN_HEIGHT = height;
+	camera.aspectRatio = (float)SCREEN_WIDTH / SCREEN_HEIGHT;
 }
 
 void resetCamera(ew::Camera& camera, ew::CameraController& cameraController) {
-	camera.position = ew::Vec3(0, 0, 5);
+	camera.position = ew::Vec3(0, 0, 3);
 	camera.target = ew::Vec3(0);
 	camera.aspectRatio = (float)SCREEN_WIDTH / SCREEN_HEIGHT;
 	camera.fov = 60.0f;

@@ -18,7 +18,7 @@ ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets/)
 
 install(FILES ${ASSIGNMENT6_INC} DESTINATION include/assignment6_proceduralGeometry)
 add_executable(assignment6_proceduralGeometry ${ASSIGNMENT6_SRC} ${ASSIGNMENT6_INC} ${ASSIGNMENT6_ASSETS})
-target_link_libraries(assignment6_proceduralGeometry PUBLIC core IMGUI glm)
+target_link_libraries(assignment6_proceduralGeometry PUBLIC core IMGUI)
 target_include_directories(assignment6_proceduralGeometry PUBLIC ${CORE_INC_DIR} ${stb_INCLUDE_DIR})
 
 #Trigger asset copy when assignment6_proceduralGeometry is built
