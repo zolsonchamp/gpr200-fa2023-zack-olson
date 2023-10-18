@@ -42,9 +42,9 @@ namespace ew {
 
 			//Construct forward, right, and up vectors
 			ew::Vec3 forward;
-			forward.x = cosf(pitchRad) * cosf(yawRad);
+			forward.x = cosf(pitchRad) * sinf(yawRad);
 			forward.y = sinf(pitchRad);
-			forward.z = cosf(pitchRad) * sinf(yawRad);
+			forward.z = cosf(pitchRad) * -cosf(yawRad);
 			forward = ew::Normalize(forward);
 
 			ew::Vec3 right = ew::Normalize(ew::Cross(forward, ew::Vec3(0, 1, 0)));

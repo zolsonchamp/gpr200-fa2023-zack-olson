@@ -6,6 +6,7 @@ namespace ew {
 	struct Camera {
 		ew::Vec3 position = ew::Vec3(0.0f, 0.0f, 5.0f);
 		ew::Vec3 target = ew::Vec3(0.0f);
+
 		float fov = 60.0f;
 		float nearPlane = 0.01f;
 		float farPlane = 100.0f;

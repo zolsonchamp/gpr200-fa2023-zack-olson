@@ -24,12 +24,17 @@ int SCREEN_HEIGHT = 720;
 float prevTime;
 
 struct AppSettings {
-	const char* shadingModeNames[3] = { "Normals","UVs","Texture" };
+	const char* shadingModeNames[6] = { "Solid Color","Normals","UVs","Texture","Lit","Texture Lit"};
 	int shadingModeIndex;
 
-	bool drawAsPoints = false;
 	ew::Vec3 bgColor = ew::Vec3(0.1f);
-	bool wireframe = false;
+	ew::Vec3 shapeColor = ew::Vec3(1.0f);
+	bool wireframe = true;
+	bool drawAsPoints = false;
+	bool backFaceCulling = true;
+
+	//Euler angles (degrees)
+	ew::Vec3 lightRotation = ew::Vec3(0, 0, 0);
 }appSettings;
 
 ew::Camera camera;
@@ -68,6 +73,7 @@ int main() {
 	//Depth testing - required for depth sorting!
 	glEnable(GL_DEPTH_TEST);
 	glPointSize(3.0f);
+	glPolygonMode(GL_FRONT_AND_BACK, appSettings.wireframe ? GL_LINE : GL_FILL);
 
 	ew::Shader shader("assets/vertexShader.vert", "assets/fragmentShader.frag");
 	unsigned int brickTexture = ew::loadTexture("assets/brick_color.jpg",GL_REPEAT,GL_LINEAR);
@@ -103,8 +109,14 @@ int main() {
 		glBindTexture(GL_TEXTURE_2D, brickTexture);
 		shader.setInt("_Texture", 0);
 		shader.setInt("_Mode", appSettings.shadingModeIndex);
-
+		shader.setVec3("_Color", appSettings.shapeColor);
 		shader.setMat4("_ViewProjection", camera.ProjectionMatrix() * camera.ViewMatrix());
+
+		//Euler angels to forward vector
+		ew::Vec3 lightRot = appSettings.lightRotation * ew::DEG2RAD;
+		ew::Vec3 lightF = ew::Vec3(sinf(lightRot.y) * cosf(lightRot.x), sinf(lightRot.x), -cosf(lightRot.y) * cosf(lightRot.x));
+		shader.setVec3("_LightDir", lightF);
+
 		//Draw cube
 		shader.setMat4("_Model", cubeTransform.getModelMatrix());
 		cubeMesh.draw((ew::DrawMode)appSettings.drawAsPoints);
@@ -135,15 +147,21 @@ int main() {
 			}
 
 			ImGui::ColorEdit3("BG color", &appSettings.bgColor.x);
-			ImGui::Combo("Shading Mode", &appSettings.shadingModeIndex, appSettings.shadingModeNames, IM_ARRAYSIZE(appSettings.shadingModeNames));
-			if (ImGui::Checkbox("Point Drawing", &appSettings.drawAsPoints)) {
-
-				glPolygonMode(GL_FRONT_AND_BACK, appSettings.wireframe ? GL_LINE : GL_FILL);
+			ImGui::ColorEdit3("Shape color", &appSettings.shapeColor.x);
+			ImGui::Combo("Shading mode", &appSettings.shadingModeIndex, appSettings.shadingModeNames, IM_ARRAYSIZE(appSettings.shadingModeNames));
+			if (appSettings.shadingModeIndex > 3) {
+				ImGui::DragFloat3("Light Rotation", &appSettings.lightRotation.x, 1.0f);
 			}
+			ImGui::Checkbox("Draw as points", &appSettings.drawAsPoints);
 			if (ImGui::Checkbox("Wireframe", &appSettings.wireframe)) {
 				glPolygonMode(GL_FRONT_AND_BACK, appSettings.wireframe ? GL_LINE : GL_FILL);
 			}
-			
+			if (ImGui::Checkbox("Back-face culling", &appSettings.backFaceCulling)) {
+				if (appSettings.backFaceCulling)
+					glEnable(GL_CULL_FACE);
+				else
+					glDisable(GL_CULL_FACE);
+			}
 			ImGui::End();
 			
 			ImGui::Render();
@@ -173,7 +191,7 @@ void resetCamera(ew::Camera& camera, ew::CameraController& cameraController) {
 	camera.farPlane = 100.0f;
 	camera.orthographic = false;
 
-	cameraController.yaw = -90.0f;
+	cameraController.yaw = 0.0f;
 	cameraController.pitch = 0.0f;
 	cameraController.moveSpeed = 6.0f;
 }
