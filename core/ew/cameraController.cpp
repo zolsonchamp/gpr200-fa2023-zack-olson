@@ -51,7 +51,8 @@ namespace ew {
 			ew::Vec3 up = ew::Normalize(ew::Cross(right, forward));
 
 			//Keyboard movement
-			float moveDelta = moveSpeed * deltaTime;
+			float speed = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) ? sprintMoveSpeed : moveSpeed;
+			float moveDelta = speed * deltaTime;
 			if (glfwGetKey(window, GLFW_KEY_W)) {
 				camera->position += forward * moveDelta;
 			}

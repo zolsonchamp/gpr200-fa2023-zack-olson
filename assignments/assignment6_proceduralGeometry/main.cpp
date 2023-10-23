@@ -141,6 +141,7 @@ int main() {
 				ImGui::DragFloat("Near Plane", &camera.nearPlane, 0.1f, 0.0f);
 				ImGui::DragFloat("Far Plane", &camera.farPlane, 0.1f, 0.0f);
 				ImGui::DragFloat("Move Speed", &cameraController.moveSpeed, 0.1f);
+				ImGui::DragFloat("Sprint Speed", &cameraController.sprintMoveSpeed, 0.1f);
 				if (ImGui::Button("Reset")) {
 					resetCamera(camera, cameraController);
 				}
@@ -193,7 +194,6 @@ void resetCamera(ew::Camera& camera, ew::CameraController& cameraController) {
 
 	cameraController.yaw = 0.0f;
 	cameraController.pitch = 0.0f;
-	cameraController.moveSpeed = 6.0f;
 }
 
 
