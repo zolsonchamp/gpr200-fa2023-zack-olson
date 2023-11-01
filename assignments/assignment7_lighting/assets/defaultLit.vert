@@ -4,7 +4,6 @@ layout(location = 1) in vec3 vNormal;
 layout(location = 2) in vec2 vUV;
 
 out Surface{
-	vec3 NormalOS; //Normal in Object/Model space
 	vec2 UV;
 }vs_out;
 
@@ -12,7 +11,6 @@ uniform mat4 _Model;
 uniform mat4 _ViewProjection;
 
 void main(){
-	vs_out.NormalOS = vNormal;
 	vs_out.UV = vUV;
 	gl_Position = _ViewProjection * _Model * vec4(vPos,1.0);
 }
