@@ -1,6 +1,7 @@
 #pragma once
 #include "../ew/ewMath/mat4.h"
 #include "../ew/ewMath/vec3.h"
+#include "../ew/ewMath/ewMath.h"
 
 namespace zoo {
 
@@ -136,7 +137,7 @@ namespace zoo {
 			x, 0, 0, 0,
 			0, y, 0, 0,
 			0, 0, z, t,
-			0, 0, 0, 0
+			0, 0, -1, 0
 		);
 	};
 
