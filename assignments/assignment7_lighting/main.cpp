@@ -21,8 +21,22 @@ void resetCamera(ew::Camera& camera, ew::CameraController& cameraController);
 int SCREEN_WIDTH = 1080;
 int SCREEN_HEIGHT = 720;
 
+struct Light {
+	ew::Vec3 position; //World space
+	ew::Vec3 color; //RGB
+};
+
+struct Material {
+	float ambientK; //Ambient coefficient (0-1)
+	float diffuseK; //Diffuse coefficient (0-1)
+	float specular; //Specular coefficient (0-1)
+	float shininess; //Shininess
+};
+
 float prevTime;
 ew::Vec3 bgColor = ew::Vec3(0.1f);
+
+Light lights[4];
 
 ew::Camera camera;
 ew::CameraController cameraController;
@@ -59,6 +73,7 @@ int main() {
 	glEnable(GL_DEPTH_TEST);
 
 	ew::Shader shader("assets/defaultLit.vert", "assets/defaultLit.frag");
+	ew::Shader unlitShader("assets/unlit.vert", "assets/unlit.frag");
 	unsigned int brickTexture = ew::loadTexture("assets/brick_color.jpg",GL_REPEAT,GL_LINEAR);
 
 	//Create cube
@@ -75,6 +90,18 @@ int main() {
 	planeTransform.position = ew::Vec3(0, -1.0, 0);
 	sphereTransform.position = ew::Vec3(-1.5f, 0.0f, 0.0f);
 	cylinderTransform.position = ew::Vec3(1.5f, 0.0f, 0.0f);
+
+	lights[0].position = ew::Vec3(3.0f, 2.0f, 0.0f);
+	lights[0].color = ew::Vec3(1.0f, 0.0f, 0.0f);
+
+	lights[1].position = ew::Vec3(-3.0f, 2.0f, 0.0f);
+	lights[1].color = ew::Vec3(0.0f, 1.0f, 0.0f);
+
+	lights[2].position = ew::Vec3(0.0f, 2.0f, 3.0f);
+	lights[2].color = ew::Vec3(0.0f, 0.0f, 1.0f);
+
+	lights[3].position = ew::Vec3(1.0f, 2.0f, -3.0f);
+	lights[3].color = ew::Vec3(1.0f, 1.0f, 0.5f);
 
 	resetCamera(camera,cameraController);
 
@@ -111,7 +138,18 @@ int main() {
 		shader.setMat4("_Model", cylinderTransform.getModelMatrix());
 		cylinderMesh.draw();
 
-		//TODO: Render point lights
+		//Render point lights
+		unlitShader.use();
+		unlitShader.setMat4("_ViewProjection", camera.ProjectionMatrix() * camera.ViewMatrix());
+
+		for (int i = 0; i < 4; ++i) {
+			unlitShader.setVec3("_Color", lights[i].color);
+
+			// Set the model matrix as a translation matrix for each light
+			unlitShader.setMat4("_Model", ew::Translate(lights[i].position));
+
+			sphereMesh.draw();
+		}
 
 		//Render UI
 		{
