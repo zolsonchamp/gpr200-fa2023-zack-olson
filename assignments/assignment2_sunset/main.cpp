@@ -22,33 +22,16 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 const int SCREEN_WIDTH = 1080;
 const int SCREEN_HEIGHT = 720;
 
-//float vertices[18] = {
-//	//x    y    z
-//	//Triangle 1 
-//	-0.5, -0.5, 0.0,
-//	-0.5,  0.5, 0.0,
-//	 0.5,  0.5, 0.0,
-//	//Triangle 2
-//	0.5,  0.5, 0.0,
-//	 0.5, -0.5, 0.0,
-//	-0.5, -0.5, 0.0
-//};
 
-//float vertices[12] = {
-//	//x    y    z
-//	-0.5, -0.5, 0.0, //Bottom left
-//	-0.5,  0.5, 0.0, //Bottom right
-//	0.5,  0.5, 0.0, //Top right
-//	0.5, -0.5, 0.0, //Top left
-//};
 
+const float radius = 1.0f;  // Adjust the radius as needed
 
 Vertex vertices[4] = {
-	//x    y    z    u    v
-   { -1, -1, 0.0, 0, 0 }, //Bottom left
-   { 1, -1, 0.0, 1, 0 }, //Bottom right
-   { 1, 1, 0.0, 1, 1 },  //Top right
-   { -1, 1, 0.0, 0, 1 }  //Top left
+    // x    y    z    u    v
+    { -radius, -radius, 0.0, 0, 0 }, // Bottom left
+    { radius, -radius, 0.0, 1, 0 },  // Bottom right
+    { radius, radius, 0.0, 1, 1 },   // Top right
+    { -radius, radius, 0.0, 0, 1 }   // Top left
 };
 
 
@@ -60,99 +43,97 @@ unsigned int indices[6] = {
 
 
 
-float triangleColor[3] = { 1.0f, 0.5f, 0.0f };
-float skyColor[3] = { 0.0f, 4.0f, 4.0f };
-float triangleBrightness = 1.0f;
-bool showImGUIDemoWindow = true;
+float timeMultiplier = 5.0f;
+bool showImGUIDemoWindow = false;
+int manualPortal = 0;
+float portalColor[4] = { 1.0, 1.0, 1.0, 1.0 };
 
 int main() {
-	printf("Initializing...");
-	if (!glfwInit()) {
-		printf("GLFW failed to init!");
-		return 1;
-	}
+    printf("Initializing...");
+    if (!glfwInit()) {
+        printf("GLFW failed to init!");
+        return 1;
+    }
 
-	GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Hello Triangle", NULL, NULL);
-	if (window == NULL) {
-		printf("GLFW failed to create window");
-		return 1;
-	}
-	glfwMakeContextCurrent(window);
-	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+    GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Swirling Portal", NULL, NULL);
+    if (window == NULL) {
+        printf("GLFW failed to create window");
+        return 1;
+    }
+    glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
-	if (!gladLoadGL(glfwGetProcAddress)) {
-		printf("GLAD Failed to load GL headers");
-		return 1;
-	}
+    if (!gladLoadGL(glfwGetProcAddress)) {
+        printf("GLAD Failed to load GL headers");
+        return 1;
+    }
 
-	//Initialize ImGUI
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	ImGui_ImplOpenGL3_Init();
+    // Initialize ImGUI
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init();
 
-	zoo::Shader shader("assets/vertexShader.vert", "assets/fragmentShader.frag");
-	shader.use();
+    zoo::Shader shader("assets/vertexShader.vert", "assets/fragmentShader.frag"); // Update fragment shader file path
+    shader.use();
 
-	//unsigned int shader = createShaderProgram(vertexShaderSource, fragmentShaderSource);
-	unsigned int vao = createVAO(vertices, 12, indices, 6);
+    unsigned int vao = createVAO(vertices, 4, indices, 6); // Adjust vertex count
 
-	std::string vertexShaderSource = zoo::loadShaderSourceFromFile("assets/vertexShader.vert");
-	std::string fragmentShaderSource = zoo::loadShaderSourceFromFile("assets/fragmentShader.frag");
-	//unsigned int shader = createShaderProgram(vertexShaderSource.c_str(), fragmentShaderSource.c_str());
+    glBindVertexArray(vao);
 
+    while (!glfwWindowShouldClose(window)) {
 
-	//glUseProgram(shader);
-	glBindVertexArray(vao);
+        float time = (float)glfwGetTime();
 
-	//wireframe
-	/*glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);*/
+        glfwPollEvents();
+        glClearColor(0.3f, 0.4f, 0.9f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
 
+        // Set uniforms
+        shader.setVec2("u_resolution", SCREEN_WIDTH, SCREEN_HEIGHT);
+        shader.setFloat("u_time", time);
+        shader.setFloat("timeMultiplier", timeMultiplier);
+        shader.setInt("setColor", manualPortal);
+        shader.setVec4("portalColor", portalColor[0], portalColor[1], portalColor[2], portalColor[3]);
 
-	while (!glfwWindowShouldClose(window)) {
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
-		float time = (float)glfwGetTime();
+        // Render UI
+        {
+            ImGui_ImplGlfw_NewFrame();
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui::NewFrame();
 
-		glfwPollEvents();
-		glClearColor(0.3f, 0.4f, 0.9f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+            ImGui::Begin("Settings");
+            ImGui::Checkbox("Show Demo Window", &showImGUIDemoWindow);
+            ImGui::SliderInt("Manual Portal Color", &manualPortal, 0, 3);
+            ImGui::SliderFloat("Swirl Speed", &timeMultiplier, 0.0f, 50.0f);
+            ImGui::ColorEdit4("Portal Color", portalColor);
+            ImGui::End();
+            if (showImGUIDemoWindow) {
+                ImGui::ShowDemoWindow(&showImGUIDemoWindow);
+            }
 
-		//Set uniforms
-		//glUniform3f(glGetUniformLocation(shader, "_Color"), triangleColor[0], triangleColor[1], triangleColor[2]);
-		shader.setVec3("_Color", triangleColor[0], triangleColor[1], triangleColor[2]);
-		//glUniform1f(glGetUniformLocation(shader,"_Brightness"), triangleBrightness);
-		shader.setFloat("_Brightness", triangleBrightness);
-		shader.setVec3("iResolution", SCREEN_WIDTH, SCREEN_HEIGHT, 0.0);
-		shader.setFloat("iTime", time);
-		shader.setVec3("skyColor", skyColor[0], skyColor[1], skyColor[2]);
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        }
 
-		//glDrawArrays(GL_TRIANGLES, 0, 6);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+        glfwSwapBuffers(window);
+    }
 
-		//Render UI
-		{
-			ImGui_ImplGlfw_NewFrame();
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui::NewFrame();
+    printf("Shutting down...");
 
-			ImGui::Begin("Settings");
-			ImGui::Checkbox("Show Demo Window", &showImGUIDemoWindow);
-			ImGui::ColorEdit3("Color", triangleColor);
-			ImGui::ColorEdit3("skyColor", skyColor);
-			ImGui::SliderFloat("Brightness", &triangleBrightness, 0.0f, 1.0f);
-			ImGui::End();
-			if (showImGUIDemoWindow) {
-				ImGui::ShowDemoWindow(&showImGUIDemoWindow);
-			}
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
-			ImGui::Render();
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		}
+    glfwDestroyWindow(window);
+    glfwTerminate();
 
-		glfwSwapBuffers(window);
-	}
-	printf("Shutting down...");
+    return 0;
 }
+
+
 
 
 unsigned int createVAO(Vertex* vertexData, int numVertices, unsigned int* indicesData, int numIndices) {

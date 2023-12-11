@@ -31,7 +31,7 @@ struct AppSettings {
 
 	ew::Vec3 bgColor = ew::Vec3(0.1f);
 	ew::Vec3 shapeColor = ew::Vec3(1.0f);
-	bool wireframe = true;
+	bool wireframe = false;
 	bool drawAsPoints = false;
 	bool backFaceCulling = true;
 
@@ -41,6 +41,11 @@ struct AppSettings {
 
 ew::Camera camera;
 ew::CameraController cameraController;
+
+float timeMultiplier = 5.0f;
+int manualPortal = 0;
+float portalColor[4] = { 1.0, 1.0, 1.0, 1.0 };
+ew::Vec2 portalPosition(0.5f, 0.25f);
 
 int main() {
 	printf("Initializing...");
@@ -80,27 +85,11 @@ int main() {
 	ew::Shader shader("assets/vertexShader.vert", "assets/fragmentShader.frag");
 	unsigned int brickTexture = ew::loadTexture("assets/brick_color.jpg",GL_REPEAT,GL_LINEAR);
 
-	//Create cube
-	ew::MeshData cubeMeshData = ew::createCube(0.5f);
-	ew::Mesh cubeMesh(cubeMeshData);
-
 	//Create plane
 	ew::MeshData planeMeshData = zoo::createPlane(10.0f, 10.0f, 10);
 	ew::Mesh planeMesh(planeMeshData);
 	ew::Transform planeTransform;
 	planeTransform.position = ew::Vec3(0.0f, -1.0f, 0.0f);
-
-	//Create sphere
-	ew::MeshData sphereMeshData = zoo::createSphere(0.5f, 64);
-	ew::Mesh sphereMesh(sphereMeshData);
-	ew::Transform sphereTransform;
-	sphereTransform.position = ew::Vec3(1.0f, 0.0f, 0.0f);
-
-	//Create cylinder
-	ew::MeshData cylinderMeshData = zoo::createCylinder(1.0f, 0.5f, 64);
-	ew::Mesh cylinderMesh(cylinderMeshData);
-	ew::Transform cylinderTransform;
-	cylinderTransform.position = ew::Vec3(-1.0f, 0.0f, 0.0f);
 
 	//Initialize transform
 	ew::Transform cubeTransform;
@@ -116,7 +105,8 @@ int main() {
 		prevTime = time;
 
 		cameraController.Move(window, &camera, deltaTime);
-
+		
+		portalPosition = ew::Vec2(0,0);
 		//Render
 		glClearColor(appSettings.bgColor.x, appSettings.bgColor.y, appSettings.bgColor.z,1.0f);
 
@@ -131,27 +121,23 @@ int main() {
 		shader.setInt("_Mode", appSettings.shadingModeIndex);
 		shader.setVec3("_Color", appSettings.shapeColor);
 		shader.setMat4("_ViewProjection", camera.ProjectionMatrix() * camera.ViewMatrix());
+		shader.setVec2("u_resolution", SCREEN_WIDTH, SCREEN_HEIGHT);
+		shader.setFloat("u_time", time);
+		shader.setFloat("timeMultiplier", timeMultiplier);
+		shader.setInt("setColor", manualPortal);
+		shader.setVec4("portalColor", portalColor[0], portalColor[1], portalColor[2], portalColor[3]);
+		shader.setVec2("portalPos", portalPosition);
 
 		//Euler angels to forward vector
 		ew::Vec3 lightRot = appSettings.lightRotation * ew::DEG2RAD;
 		ew::Vec3 lightF = ew::Vec3(sinf(lightRot.y) * cosf(lightRot.x), sinf(lightRot.x), -cosf(lightRot.y) * cosf(lightRot.x));
 		shader.setVec3("_LightDir", lightF);
 
-		//Draw cube
-		shader.setMat4("_Model", cubeTransform.getModelMatrix());
-		cubeMesh.draw((ew::DrawMode)appSettings.drawAsPoints);
-
-		//Draw sphere
-		shader.setMat4("_Model", sphereTransform.getModelMatrix());
-		sphereMesh.draw((ew::DrawMode)appSettings.drawAsPoints);
-
-		//Draw cylinder
-		shader.setMat4("_Model", cylinderTransform.getModelMatrix());
-		cylinderMesh.draw((ew::DrawMode)appSettings.drawAsPoints);
-
 		//Draw Mesh
 		shader.setMat4("_Model", planeTransform.getModelMatrix());
 		planeMesh.draw((ew::DrawMode)appSettings.drawAsPoints);
+
+		
 
 		//Render UI
 		{
@@ -170,6 +156,7 @@ int main() {
 				else {
 					ImGui::SliderFloat("FOV", &camera.fov, 0.0f, 180.0f);
 				}
+				
 				ImGui::DragFloat("Near Plane", &camera.nearPlane, 0.1f, 0.0f);
 				ImGui::DragFloat("Far Plane", &camera.farPlane, 0.1f, 0.0f);
 				ImGui::DragFloat("Move Speed", &cameraController.moveSpeed, 0.1f);
@@ -178,23 +165,27 @@ int main() {
 					resetCamera(camera, cameraController);
 				}
 			}
-
-			ImGui::ColorEdit3("BG color", &appSettings.bgColor.x);
-			ImGui::ColorEdit3("Shape color", &appSettings.shapeColor.x);
-			ImGui::Combo("Shading mode", &appSettings.shadingModeIndex, appSettings.shadingModeNames, IM_ARRAYSIZE(appSettings.shadingModeNames));
-			if (appSettings.shadingModeIndex > 3) {
-				ImGui::DragFloat3("Light Rotation", &appSettings.lightRotation.x, 1.0f);
+			if (ImGui::CollapsingHeader("Misc Settings")) {
+				ImGui::ColorEdit3("BG color", &appSettings.bgColor.x);
+				ImGui::ColorEdit3("Shape color", &appSettings.shapeColor.x);
+				ImGui::Combo("Shading mode", &appSettings.shadingModeIndex, appSettings.shadingModeNames, IM_ARRAYSIZE(appSettings.shadingModeNames));
+				if (appSettings.shadingModeIndex > 3) {
+					ImGui::DragFloat3("Light Rotation", &appSettings.lightRotation.x, 1.0f);
+				}
+				ImGui::Checkbox("Draw as points", &appSettings.drawAsPoints);
+				if (ImGui::Checkbox("Wireframe", &appSettings.wireframe)) {
+					glPolygonMode(GL_FRONT_AND_BACK, appSettings.wireframe ? GL_LINE : GL_FILL);
+				}
+				if (ImGui::Checkbox("Back-face culling", &appSettings.backFaceCulling)) {
+					if (appSettings.backFaceCulling)
+						glEnable(GL_CULL_FACE);
+					else
+						glDisable(GL_CULL_FACE);
+				}
 			}
-			ImGui::Checkbox("Draw as points", &appSettings.drawAsPoints);
-			if (ImGui::Checkbox("Wireframe", &appSettings.wireframe)) {
-				glPolygonMode(GL_FRONT_AND_BACK, appSettings.wireframe ? GL_LINE : GL_FILL);
-			}
-			if (ImGui::Checkbox("Back-face culling", &appSettings.backFaceCulling)) {
-				if (appSettings.backFaceCulling)
-					glEnable(GL_CULL_FACE);
-				else
-					glDisable(GL_CULL_FACE);
-			}
+			ImGui::SliderInt("Manual Portal Color", &manualPortal, 0, 3);
+			ImGui::SliderFloat("Swirl Speed", &timeMultiplier, 0.0f, 50.0f);
+			ImGui::ColorEdit4("Portal Color", portalColor);
 			ImGui::End();
 			
 			ImGui::Render();
