@@ -1,3 +1,6 @@
+//The calculation to get the swirl originally from this guide:
+//https://juejin.cn/post/6844904080779771918
+
 #include <stdio.h>
 #include <math.h>
 
@@ -40,13 +43,12 @@ unsigned int indices[6] = {
 	0, 1, 2,  //Triangle 2
 };
 
-
-
-
+float fracture = 0.02f;
 float timeMultiplier = 5.0f;
 bool showImGUIDemoWindow = false;
 int manualPortal = 0;
 float portalColor[4] = { 1.0, 1.0, 1.0, 1.0 };
+float glowColor[4] = { 1.0, 1.0, 1.0, 1.0 };
 
 int main() {
     printf("Initializing...");
@@ -92,9 +94,11 @@ int main() {
         // Set uniforms
         shader.setVec2("u_resolution", SCREEN_WIDTH, SCREEN_HEIGHT);
         shader.setFloat("u_time", time);
+        shader.setFloat("fracture", fracture);
         shader.setFloat("timeMultiplier", timeMultiplier);
         shader.setInt("setColor", manualPortal);
         shader.setVec4("portalColor", portalColor[0], portalColor[1], portalColor[2], portalColor[3]);
+        shader.setVec4("glowColor", glowColor[0], glowColor[1], glowColor[2], glowColor[3]);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
@@ -102,13 +106,16 @@ int main() {
         {
             ImGui_ImplGlfw_NewFrame();
             ImGui_ImplOpenGL3_NewFrame();
+
             ImGui::NewFrame();
 
             ImGui::Begin("Settings");
             ImGui::Checkbox("Show Demo Window", &showImGUIDemoWindow);
             ImGui::SliderInt("Manual Portal Color", &manualPortal, 0, 3);
             ImGui::SliderFloat("Swirl Speed", &timeMultiplier, 0.0f, 50.0f);
+            ImGui::SliderFloat("Fracture Amount", &fracture, 0.0f, 1);
             ImGui::ColorEdit4("Portal Color", portalColor);
+            ImGui::ColorEdit4("Glow Color", glowColor);
             ImGui::End();
             if (showImGUIDemoWindow) {
                 ImGui::ShowDemoWindow(&showImGUIDemoWindow);
